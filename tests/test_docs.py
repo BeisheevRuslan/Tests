@@ -1,7 +1,8 @@
+import pytest
 from tasks.docs import get_name, get_directory, add_doc
 
 
-class TestMyDocs:
+class TestDocs:
     def setup_method(self):
         self.documents = [
             {"type": "passport", "number": "2207 876234", "name": "Василий Гупкин"},
@@ -15,17 +16,41 @@ class TestMyDocs:
             '3': []
         }
 
-    def test_get_name(self):
-        assert get_name(self.documents, "10006") == "Аристарх Павлов"
+    @pytest.mark.parametrize(
+        "doc_number, expected",
+        [
+            ("10006", "Аристарх Павлов"),
+            ("2207 876234", "Василий Гупкин"),
+            ("11-2", "Геннадий Покемонов"),
+            ("999999", "Документ не найден"),
+        ],
+    )
+    def test_get_name(self, doc_number, expected):
+        assert get_name(self.documents, doc_number) == expected
 
-    def test_get_directory(self):
-        assert get_directory(self.directories, "11-2") == "1"
+    @pytest.mark.parametrize(
+        "doc_number, expected",
+        [
+            ("11-2", "1"),
+            ("2207 876234", "1"),
+            ("10006", "2"),
+            ("999999", "Полки с таким документом не найдено"),
+        ],
+    )
+    def test_get_directory(self, doc_number, expected):
+        assert get_directory(self.directories, doc_number) == expected
 
-    def test_add_doc(self):
-        result = add_doc(self.documents, self.directories, 'international passport',
-                         '311 020203', 'Александр Пушкин', 3)
+    @pytest.mark.parametrize(
+        "document_type, number, name, shelf_number, expected_shelf_length",
+        [
+            ('international passport', '311 020203', 'Александр Пушкин', 3, 1),
+            ('driver license', '999 999999', 'Иван Иванов', 5, 1),
+        ],
+    )
+    def test_add_doc(self, document_type, number, name, shelf_number, expected_shelf_length):
+        result = add_doc(self.documents, self.directories, document_type, number, name, shelf_number)
 
         assert result == "Документ успешно добавлен"
-        assert {"type": "international passport", "number": "311 020203", "name": "Александр Пушкин"} in self.documents
-        assert "311 020203" in self.directories['3']
-        assert len(self.directories['3']) == 1
+        assert {"type": document_type, "number": number, "name": name} in self.documents
+        assert number in self.directories[str(shelf_number)]
+        assert len(self.directories[str(shelf_number)]) == expected_shelf_length

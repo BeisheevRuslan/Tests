@@ -4,12 +4,12 @@ from pathlib import Path
 
 
 class YaDiskWorkspace:
-    def __init__(self):
-        file_path = Path(__file__).parent.parent / "data.json"
-
-        with open(file_path, encoding="utf-8") as token_file:
-            data = json.load(token_file)
-            token = data["token"]
+    def __init__(self, token=None):
+        if token is None:
+            file_path = Path(__file__).parent.parent / "data.example.json"
+            with open(file_path, encoding="utf-8") as token_file:
+                data = json.load(token_file)
+                token = data["token"]
 
         self.token = token
         self.base_url = "https://cloud-api.yandex.net/v1/disk/resources"
@@ -24,7 +24,7 @@ class YaDiskWorkspace:
         return response
 
     def delete_folder(self, folder_name):
-        params = {"path": folder_name}
+        params = {"path": folder_name, "permanently": "true"}
         response = requests.delete(self.base_url, headers=self.headers, params=params)
         return response
 
@@ -33,9 +33,15 @@ class YaDiskWorkspace:
         response = requests.get(self.base_url, headers=self.headers, params=params)
         return response
 
+    def list_files(self):
+        params = {"path": "/"}
+        response = requests.get(self.base_url, headers=self.headers, params=params)
+        return response
+
 
 if __name__ == '__main__':
     ya_disk_client = YaDiskWorkspace()
-    print(ya_disk_client.create_folder("test_folder"))
-    print(ya_disk_client.delete_folder("test_folder"))
-    print(ya_disk_client.check_folder("test_folder"))
+    print("Create:", ya_disk_client.create_folder("test_folder_main").status_code)
+    print("Check:", ya_disk_client.check_folder("test_folder_main").status_code)
+    print("List:", ya_disk_client.list_files().status_code)
+    print("Delete:", ya_disk_client.delete_folder("test_folder_main").status_code)
